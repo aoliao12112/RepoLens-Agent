@@ -9,6 +9,7 @@ __pycache__/
 *.db
 *.sqlite3
 logs/
+repolens-run.*.log
 artifacts/
 data/private/
 data/evaluation/results/

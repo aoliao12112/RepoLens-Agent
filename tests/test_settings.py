@@ -23,3 +23,15 @@ def test_settings_read_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_settings_reject_invalid_concurrency() -> None:
     with pytest.raises(ValidationError):
         RepoLensSettings(max_concurrency=0, _env_file=None)
+
+
+def test_blank_credentials_are_treated_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "")
+    monkeypatch.setenv("OPENAI_API_KEY", "   ")
+    monkeypatch.setenv("OPENAI_MODEL", "")
+
+    settings = RepoLensSettings(_env_file=None)
+
+    assert settings.github_token is None
+    assert settings.openai_api_key is None
+    assert settings.openai_model is None

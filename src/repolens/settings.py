@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,13 @@ class RepoLensSettings(BaseSettings):
     cache_activity_ttl_seconds: int = Field(default=300, ge=0, le=86400)
     cache_issue_ttl_seconds: int = Field(default=300, ge=0, le=86400)
     cors_origins: list[str] = ["http://localhost:8000", "http://127.0.0.1:8000"]
+
+    @field_validator("github_token", "openai_api_key", "openai_model", mode="before")
+    @classmethod
+    def blank_credentials_are_unset(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     model_config = SettingsConfigDict(
         env_file=".env",
