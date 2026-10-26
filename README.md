@@ -27,5 +27,39 @@ RepoLens 不是通用聊天机器人。它解决一个明确问题：在投入�
 
 ## 当前状态
 
-已完成批次 0 至批次 2：领域模型与错误契约、可靠异步 GitHub 客户端，以及仓库元数据、语言与目录树、README、许可证、提交、贡献者、Release 和 Issue 信号采集。采集工具输出可追溯证据，支持分页截断标记和单工具失败降级。下一步进入批次 3，实现 SQLite 缓存、任务状态持久化和结构化日志基础设施。
+已完成批次 0 至批次 8：从 GitHub 数据采集、缓存、规则和 Agent 审查、证据校验，到 FastAPI 任务闭环与 Web 演示页均已打通。页面支持任务进度、分区报告、逐条证据、人工确认，以及 JSON/Markdown 导出。当前进入批次 9，评测指标只从保存的真实运行产物计算，不填写估算结果。
+
+## 本地运行
+
+```powershell
+python -m pip install -e ".[dev]"
+uvicorn repolens.api:app --reload
+```
+
+浏览器打开 `http://127.0.0.1:8000`。不配置 `OPENAI_API_KEY` 时，系统自动使用确定性规则分析；建议配置 `GITHUB_TOKEN` 以提高 GitHub API 限额。
+
+## API 闭环
+
+- `POST /api/analyses`：创建分析任务。
+- `GET /api/analyses/{task_id}`：查询阶段、进度和失败摘要。
+- `GET /api/analyses/{task_id}/report`：读取带证据的草稿或最终报告。
+- `POST /api/analyses/{task_id}/confirm`：确认目标并接受已审阅风险。
+- `GET /health`：检查服务和数据库状态。
+
+## 评测
+
+```powershell
+repolens-evaluate --validate-only
+repolens-evaluate --output data/evaluation/results/latest
+```
+
+规则模式已对清单中的 20 个公开仓库完成真实运行：20/20 生成结构化报告，证据覆盖率为 100%，平均耗时约 10.11 秒。当前人工标注数为 0，因此**不宣称字段准确率**；本轮未调用模型，也不宣称模型费用。详细口径见 [评测说明](docs/EVALUATION.md)，修复过程见 [失败案例](docs/FAILURE_CASES.md)，系统关系见 [架构说明](docs/ARCHITECTURE.md)。
+
+## 已知限制
+
+- 仅支持公开 GitHub 仓库，不克隆或执行第三方代码。
+- GitHub Token 未配置或配额耗尽时，任务可能失败或降级。
+- 目录树信号只能证明文件存在，不能证明测试真实通过或项目可构建。
+- 许可证结论是工程风险提示，不构成法律意见。
+- 应用内后台任务适合演示和单机部署，生产环境应替换为独立任务队列。
 

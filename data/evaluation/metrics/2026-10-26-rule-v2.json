@@ -1,0 +1,16 @@
+{
+  "mode": "rule_only",
+  "dataset": "data/evaluation/repositories.json",
+  "run_date": "2026-10-26",
+  "total": 20,
+  "succeeded": 20,
+  "failed": 0,
+  "structured_output_rate": 1.0,
+  "evidence_coverage_rate": 1.0,
+  "field_accuracy": null,
+  "annotated_field_count": 0,
+  "average_duration_ms": 10106.5005,
+  "average_known_cost_usd": null,
+  "cost_observation_count": 0,
+  "notes": "Metrics copied from the locally preserved run directory data/evaluation/results/2026-10-26-rule-v2. Field accuracy and model cost are intentionally null because there were no human annotations or model calls."
+}

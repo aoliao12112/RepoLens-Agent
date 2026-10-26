@@ -1,2 +1,23 @@
-[]
+[
+  {"repository_url": "https://github.com/fastapi/fastapi", "target": "用于学习 Python API 与 Agent 服务工程化", "category": "active-python", "annotation": null},
+  {"repository_url": "https://github.com/pydantic/pydantic", "target": "用于构建 Python 数据校验基础设施", "category": "active-python", "annotation": null},
+  {"repository_url": "https://github.com/encode/httpx", "target": "用于异步 HTTP 客户端二次开发", "category": "active-python", "annotation": null},
+  {"repository_url": "https://github.com/pytest-dev/pytest", "target": "用于研究 Python 测试框架设计", "category": "active-python", "annotation": null},
+  {"repository_url": "https://github.com/openai/openai-agents-python", "target": "用于开发带工具调用的 Agent 系统", "category": "agent-python", "annotation": null},
+  {"repository_url": "https://github.com/langchain-ai/langchain", "target": "用于开发可观测的 Agent 应用", "category": "agent-python", "annotation": null},
+  {"repository_url": "https://github.com/microsoft/autogen", "target": "用于学习多 Agent 编排", "category": "agent-python", "annotation": null},
+  {"repository_url": "https://github.com/crewAIInc/crewAI", "target": "用于构建多 Agent 工作流", "category": "agent-python", "annotation": null},
+  {"repository_url": "https://github.com/facebook/react", "target": "用于开发现代 Web 前端", "category": "active-javascript", "annotation": null},
+  {"repository_url": "https://github.com/vuejs/core", "target": "用于开发 TypeScript Web 前端", "category": "active-typescript", "annotation": null},
+  {"repository_url": "https://github.com/sveltejs/svelte", "target": "用于开发轻量 Web 应用", "category": "active-typescript", "annotation": null},
+  {"repository_url": "https://github.com/gin-gonic/gin", "target": "用于开发 Go API 服务", "category": "active-go", "annotation": null},
+  {"repository_url": "https://github.com/rust-lang/rust", "target": "用于学习大型 Rust 工程", "category": "active-rust", "annotation": null},
+  {"repository_url": "https://github.com/spring-projects/spring-boot", "target": "用于开发 Java 后端服务", "category": "active-java", "annotation": null},
+  {"repository_url": "https://github.com/dotnet/aspnetcore", "target": "用于开发 .NET Web API", "category": "active-csharp", "annotation": null},
+  {"repository_url": "https://github.com/atom/atom", "target": "用于二次开发桌面代码编辑器", "category": "archived", "annotation": null},
+  {"repository_url": "https://github.com/request/request", "target": "用于 Node.js HTTP 客户端二次开发", "category": "archived", "annotation": null},
+  {"repository_url": "https://github.com/googlearchive/code-prettify", "target": "用于 Web 代码高亮功能", "category": "archived", "annotation": null},
+  {"repository_url": "https://github.com/expressjs/generator", "target": "用于搭建 Node.js Web 项目", "category": "low-maintenance", "annotation": null},
+  {"repository_url": "https://github.com/public-apis/public-apis", "target": "用于构建公开 API 检索产品", "category": "content-repository", "annotation": null}
+]
 
