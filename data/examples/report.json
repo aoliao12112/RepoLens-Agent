@@ -1,0 +1,101 @@
+{
+  "report_id": "22222222-2222-4222-8222-222222222222",
+  "task_id": "11111111-1111-4111-8111-111111111111",
+  "status": "awaiting_confirmation",
+  "repository": {
+    "full_name": "openai/openai-agents-python",
+    "html_url": "https://github.com/openai/openai-agents-python",
+    "description": "A lightweight framework for building multi-agent workflows.",
+    "default_branch": "main",
+    "primary_language": "Python",
+    "stars": 1000,
+    "forks": 100,
+    "open_issues": 20,
+    "archived": false,
+    "created_at": "2025-01-01T00:00:00+00:00",
+    "updated_at": "2026-10-25T12:00:00+00:00",
+    "pushed_at": "2026-10-25T10:00:00+00:00",
+    "license_spdx": "MIT"
+  },
+  "target": "判断该项目是否适合作为 Agent 开发实习的二次开发项目",
+  "overall_score": 82,
+  "recommendation": "recommended",
+  "executive_summary": "仓库近期活跃，具备测试和明确许可证，适合作为 Agent 工程实践的二次开发基础。",
+  "sections": [
+    {
+      "kind": "maintenance",
+      "score": 88,
+      "summary": "仓库近期仍有代码更新。",
+      "findings": [
+        {
+          "finding_id": "recent-push",
+          "title": "近期仍有代码推送",
+          "description": "仓库最近推送时间距评估时间较近。",
+          "severity": "info",
+          "claim_type": "fact",
+          "evidence": [
+            {
+              "evidence_id": "repo-pushed-at",
+              "claim": "仓库最近推送时间为 2026-10-25。",
+              "kind": "github_api",
+              "source_url": "https://api.github.com/repos/openai/openai-agents-python",
+              "field_or_path": "pushed_at"
+            }
+          ],
+          "rule_id": "maintenance.recent_push"
+        }
+      ],
+      "status": "success"
+    },
+    {
+      "kind": "engineering",
+      "score": 85,
+      "summary": "项目具备 Python 工程基础，仍需实际安装验证。",
+      "findings": [],
+      "status": "success"
+    },
+    {
+      "kind": "license",
+      "score": 90,
+      "summary": "GitHub API 将许可证识别为 MIT。",
+      "findings": [],
+      "status": "success"
+    },
+    {
+      "kind": "target_fit",
+      "score": 78,
+      "summary": "技术方向与 Agent 开发实践目标匹配。",
+      "findings": [],
+      "status": "success"
+    }
+  ],
+  "risks": [
+    {
+      "finding_id": "runtime-not-verified",
+      "title": "尚未验证本地运行",
+      "description": "当前只完成仓库公开信息检查，没有执行第三方代码。",
+      "severity": "medium",
+      "claim_type": "needs_confirmation",
+      "evidence": []
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "repo-pushed-at",
+      "claim": "仓库最近推送时间为 2026-10-25。",
+      "kind": "github_api",
+      "source_url": "https://api.github.com/repos/openai/openai-agents-python",
+      "field_or_path": "pushed_at"
+    }
+  ],
+  "needs_human_review": [
+    "实际安装并运行官方示例，确认开发环境兼容性。"
+  ],
+  "development_plan": [
+    "第 1 天：完成本地安装与最小示例运行。",
+    "第 2 至 3 天：阅读核心流程并确定扩展点。",
+    "第 4 至 7 天：实现一个带评测的业务场景。"
+  ],
+  "generated_at": "2026-10-26T08:00:00+00:00",
+  "confirmed_at": null
+}
