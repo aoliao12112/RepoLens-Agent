@@ -81,6 +81,27 @@ async def test_get_repository_metadata_maps_response_and_headers() -> None:
 
 
 @pytest.mark.asyncio
+async def test_repository_metadata_follows_github_rename_redirect() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/repos/old/repo":
+            return httpx.Response(
+                301,
+                headers={"Location": "https://api.github.com/repos/new/repo"},
+                json={"message": "Moved Permanently"},
+            )
+        payload = repository_payload()
+        payload["full_name"] = "new/repo"
+        payload["html_url"] = "https://github.com/new/repo"
+        return httpx.Response(200, json=payload)
+
+    async with make_http_client(handler) as http_client:
+        client = GitHubClient(make_settings(), client=http_client)
+        metadata = await client.get_repository_metadata(RepositoryRef(owner="old", name="repo"))
+
+    assert metadata.full_name == "new/repo"
+
+
+@pytest.mark.asyncio
 async def test_temporary_response_is_retried_then_succeeds() -> None:
     calls = 0
     delays: list[float] = []

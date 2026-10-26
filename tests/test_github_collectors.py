@@ -132,7 +132,10 @@ async def test_missing_readme_and_license_are_valid_empty_results() -> None:
 
     assert result.readme_text is None
     assert result.license_status == LicenseStatus.missing
-    assert result.evidence == []
+    assert {item.evidence_id for item in result.evidence} == {
+        "readme-missing",
+        "license-missing",
+    }
 
 
 @pytest.mark.asyncio

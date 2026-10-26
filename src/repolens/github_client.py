@@ -14,6 +14,8 @@ from urllib.parse import quote
 import httpx
 from pydantic import ValidationError
 
+from .cache import CacheRepository, ResponseCache, build_cache_key
+from .database import Database
 from .errors import (
     GitHubRateLimitError,
     RepoLensError,
@@ -56,6 +58,8 @@ class GitHubClient:
         client: httpx.AsyncClient | None = None,
         sleep: _Sleep = asyncio.sleep,
         now: _Now | None = None,
+        cache: ResponseCache | None = None,
+        task_id: str | None = None,
     ) -> None:
         self._settings = settings or RepoLensSettings()
         self._headers = {
@@ -71,6 +75,35 @@ class GitHubClient:
         self._semaphore = asyncio.Semaphore(self._settings.max_concurrency)
         self._sleep = sleep
         self._now = now or (lambda: datetime.now(UTC))
+        self._cache = cache
+        self._task_id = task_id
+
+    @classmethod
+    async def create(
+        cls,
+        settings: RepoLensSettings | None = None,
+        *,
+        client: httpx.AsyncClient | None = None,
+        sleep: _Sleep = asyncio.sleep,
+        now: _Now | None = None,
+        task_id: str | None = None,
+    ) -> Self:
+        resolved_settings = settings or RepoLensSettings()
+        database = Database(resolved_settings.database_url)
+        await database.initialize()
+        cache = CacheRepository(
+            database,
+            data_version=resolved_settings.cache_data_version,
+            now=now,
+        )
+        return cls(
+            resolved_settings,
+            client=client,
+            sleep=sleep,
+            now=now,
+            cache=cache,
+            task_id=task_id,
+        )
 
     async def close(self) -> None:
         if self._owns_client:
@@ -235,6 +268,16 @@ class GitHubClient:
                     "path,content,html_url",
                 )
             )
+        else:
+            evidence.append(
+                self._api_evidence(
+                    repo,
+                    "readme",
+                    "readme-missing",
+                    "GitHub README API 未返回默认 README。",
+                    "HTTP 404",
+                )
+            )
         if license_payload is not None:
             evidence.append(
                 self._api_evidence(
@@ -243,6 +286,16 @@ class GitHubClient:
                     "license",
                     "许可证识别结果和文件路径来自 GitHub License API。",
                     "license.spdx_id,path,content",
+                )
+            )
+        else:
+            evidence.append(
+                self._api_evidence(
+                    repo,
+                    "license",
+                    "license-missing",
+                    "GitHub License API 未返回可识别的许可证文件。",
+                    "HTTP 404",
                 )
             )
 
@@ -402,11 +455,13 @@ class GitHubClient:
 
     async def collect_repository_snapshot(self, repo: RepositoryRef) -> RepositorySnapshot:
         metadata = await self.get_repository_metadata(repo)
+        canonical_owner, canonical_name = metadata.full_name.split("/", maxsplit=1)
+        canonical_repo = RepositoryRef(owner=canonical_owner, name=canonical_name)
         results = await asyncio.gather(
-            self.get_languages_and_tree(repo, metadata.default_branch),
-            self.get_readme_and_license(repo),
-            self.get_recent_activity(repo),
-            self.get_issue_signals(repo),
+            self.get_languages_and_tree(canonical_repo, metadata.default_branch),
+            self.get_readme_and_license(canonical_repo),
+            self.get_recent_activity(canonical_repo),
+            self.get_issue_signals(canonical_repo),
             return_exceptions=True,
         )
         fallback_values = (
@@ -435,6 +490,7 @@ class GitHubClient:
                     json.dumps(
                         {
                             "event": "github_collection_failure",
+                            "task_id": self._task_id,
                             "tool": name,
                             "error_type": type(result).__name__,
                         },
@@ -593,6 +649,22 @@ class GitHubClient:
         params: Mapping[str, str | int] | None = None,
         allow_not_found: bool = False,
     ) -> Any:
+        cache_ttl = self._cache_ttl(tool)
+        cache_key: str | None = None
+        if self._cache is not None and cache_ttl > 0:
+            cache_key = build_cache_key(method, path, params, self._cache.data_version)
+            cached = await self._read_cache(cache_key, tool)
+            if cached is not None:
+                self._log_attempt(
+                    tool,
+                    0,
+                    perf_counter(),
+                    "success",
+                    None,
+                    cache_hit=True,
+                )
+                return cached
+
         max_attempts = self._settings.request_max_retries + 1
         for attempt in range(max_attempts):
             started_at = perf_counter()
@@ -604,6 +676,7 @@ class GitHubClient:
                         params=params,
                         headers=self._headers,
                         timeout=self._settings.request_timeout_seconds,
+                        follow_redirects=True,
                     )
             except httpx.TimeoutException as exc:
                 self._log_attempt(tool, attempt, started_at, "error", "timeout")
@@ -698,10 +771,42 @@ class GitHubClient:
                     status_code=response.status_code,
                 ) from exc
 
+            if self._cache is not None and cache_key is not None:
+                await self._write_cache(cache_key, payload, cache_ttl, tool)
             self._log_attempt(tool, attempt, started_at, "success", None, response.status_code)
             return payload
 
         raise RuntimeError("GitHub 请求重试循环异常结束")
+
+    async def _read_cache(self, cache_key: str, tool: str) -> Any | None:
+        if self._cache is None:
+            return None
+        try:
+            return await self._cache.get(cache_key)
+        except Exception as exc:  # noqa: BLE001 - cache failure must not block collection.
+            self._log_cache_failure(tool, "read", exc)
+            return None
+
+    async def _write_cache(self, cache_key: str, payload: Any, ttl: int, tool: str) -> None:
+        if self._cache is None:
+            return
+        try:
+            await self._cache.set(cache_key, payload, ttl)
+        except Exception as exc:  # noqa: BLE001 - preserve a valid upstream response.
+            self._log_cache_failure(tool, "write", exc)
+
+    def _cache_ttl(self, tool: str) -> int:
+        if tool == "get_repository_metadata":
+            return self._settings.cache_metadata_ttl_seconds
+        if tool.startswith("get_languages_and_tree"):
+            return self._settings.cache_tree_ttl_seconds
+        if tool.startswith("get_readme_and_license"):
+            return self._settings.cache_content_ttl_seconds
+        if tool.startswith("get_recent_activity"):
+            return self._settings.cache_activity_ttl_seconds
+        if tool.startswith("get_issue_signals"):
+            return self._settings.cache_issue_ttl_seconds
+        return 0
 
     def _retry_delay(self, attempt: int, response: httpx.Response | None = None) -> float:
         delay = self._settings.retry_base_delay_seconds * (2**attempt)
@@ -736,25 +841,43 @@ class GitHubClient:
         except (OverflowError, ValueError):
             return None
 
-    @staticmethod
     def _log_attempt(
+        self,
         tool: str,
         attempt: int,
         started_at: float,
         status: str,
         error_type: str | None,
         status_code: int | None = None,
+        *,
+        cache_hit: bool = False,
     ) -> None:
         event = {
             "event": "github_tool_call",
+            "task_id": self._task_id,
             "tool": tool,
             "duration_ms": round((perf_counter() - started_at) * 1000, 2),
             "status": status,
             "retry_count": attempt,
             "error_type": error_type,
             "status_code": status_code,
+            "cache_hit": cache_hit,
         }
         logger.info(json.dumps(event, ensure_ascii=False, separators=(",", ":")))
+
+    def _log_cache_failure(self, tool: str, operation: str, error: Exception) -> None:
+        logger.warning(
+            json.dumps(
+                {
+                    "event": "cache_failure",
+                    "task_id": self._task_id,
+                    "tool": tool,
+                    "operation": operation,
+                    "error_type": type(error).__name__,
+                },
+                separators=(",", ":"),
+            )
+        )
 
     async def __aenter__(self) -> Self:
         return self

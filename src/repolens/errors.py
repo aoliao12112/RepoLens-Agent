@@ -13,6 +13,9 @@ class ErrorCode(str, Enum):
     upstream_temporary_failure = "upstream_temporary_failure"
     upstream_invalid_response = "upstream_invalid_response"
     analysis_failure = "analysis_failure"
+    task_not_found = "task_not_found"
+    invalid_task_transition = "invalid_task_transition"
+    confirmation_invalid = "confirmation_invalid"
 
 
 class RepoLensError(Exception):
@@ -107,6 +110,36 @@ class AnalysisError(RepoLensError):
         super().__init__(
             message,
             code=ErrorCode.analysis_failure,
+            retryable=False,
+            details=details,
+        )
+
+
+class TaskNotFoundError(RepoLensError):
+    def __init__(self, task_id: str) -> None:
+        super().__init__(
+            f"分析任务不存在：{task_id}",
+            code=ErrorCode.task_not_found,
+            retryable=False,
+            details={"task_id": task_id},
+        )
+
+
+class InvalidTaskTransitionError(RepoLensError):
+    def __init__(self, current: str, target: str) -> None:
+        super().__init__(
+            f"任务状态不能从 {current} 变更为 {target}",
+            code=ErrorCode.invalid_task_transition,
+            retryable=False,
+            details={"current": current, "target": target},
+        )
+
+
+class ConfirmationError(RepoLensError):
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=ErrorCode.confirmation_invalid,
             retryable=False,
             details=details,
         )

@@ -72,6 +72,11 @@ class ReportStatus(str, Enum):
     confirmed = "confirmed"
 
 
+class AnalysisMode(str, Enum):
+    rule_only = "rule_only"
+    hybrid = "hybrid"
+
+
 class Recommendation(str, Enum):
     recommended = "recommended"
     cautious = "cautious"
@@ -219,6 +224,7 @@ class ReviewFinding(BaseModel):
     claim_type: ClaimType
     evidence: list[Evidence] = Field(default_factory=list)
     rule_id: str | None = Field(default=None, max_length=120)
+    score_delta: int = Field(default=0, ge=-100, le=100)
 
     @model_validator(mode="after")
     def require_evidence_for_verified_claims(self) -> ReviewFinding:
@@ -236,6 +242,55 @@ class ReviewSection(BaseModel):
     summary: str = Field(min_length=1, max_length=2_000)
     findings: list[ReviewFinding] = Field(default_factory=list)
     status: ToolStatus = ToolStatus.success
+
+
+class PlannedReview(BaseModel):
+    kind: ReviewKind
+    reason: str = Field(min_length=1, max_length=500)
+    priority: int = Field(default=1, ge=1, le=3)
+
+
+class ReviewPlan(BaseModel):
+    reviews: list[PlannedReview] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def reject_duplicate_reviews(self) -> ReviewPlan:
+        kinds = [review.kind for review in self.reviews]
+        if len(kinds) != len(set(kinds)):
+            raise ValueError("审查计划不能包含重复角色")
+        return self
+
+
+class ModelFinding(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2_000)
+    severity: RiskSeverity
+    claim_type: ClaimType
+    evidence_ids: list[str] = Field(default_factory=list, max_length=20)
+
+
+class ModelReview(BaseModel):
+    kind: ReviewKind
+    score: Score
+    summary: str = Field(min_length=1, max_length=2_000)
+    findings: list[ModelFinding] = Field(default_factory=list, max_length=30)
+
+
+class ModelUsage(BaseModel):
+    model: str | None = None
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    estimated_cost_usd: float | None = Field(default=None, ge=0)
+
+
+class ReportConfirmation(BaseModel):
+    task_id: UUID
+    target_confirmed: bool
+    accepted_risk_ids: list[str] = Field(default_factory=list)
+    notes: str | None = Field(default=None, max_length=2_000)
+    confirmed_at: datetime = Field(default_factory=utc_now)
+
+    _confirmed_at_has_timezone = field_validator("confirmed_at")(require_timezone)
 
 
 class TaskError(BaseModel):
@@ -270,6 +325,7 @@ class DueDiligenceReport(BaseModel):
     report_id: UUID = Field(default_factory=uuid4)
     task_id: UUID
     status: ReportStatus = ReportStatus.draft
+    analysis_mode: AnalysisMode = AnalysisMode.rule_only
     repository: RepositoryMetadata
     target: str = Field(min_length=3, max_length=2_000)
     overall_score: Score
@@ -282,6 +338,10 @@ class DueDiligenceReport(BaseModel):
     development_plan: list[str] = Field(default_factory=list)
     generated_at: datetime = Field(default_factory=utc_now)
     confirmed_at: datetime | None = None
+    degraded_reviews: list[ReviewKind] = Field(default_factory=list)
+    model_usage: list[ModelUsage] = Field(default_factory=list)
+    evidence_verified: bool = False
+    verification_warnings: list[str] = Field(default_factory=list)
 
     _generated_at_has_timezone = field_validator("generated_at")(require_timezone)
     _confirmed_at_has_timezone = field_validator("confirmed_at")(require_timezone)
