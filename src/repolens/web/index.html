@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="RepoLens Agent：带证据的 GitHub 开源项目技术尽调">
+    <title>RepoLens Agent · GitHub 技术尽调</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="RepoLens Agent 首页">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span>
+          <strong>RepoLens</strong>
+          <small>Evidence-driven repo review</small>
+        </span>
+      </a>
+      <div class="system-state"><span class="status-dot"></span> API ready</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">GitHub repository due diligence</div>
+        <h1>别凭 Star 数做决定。<br><span>让证据先说话。</span></h1>
+        <p>输入一个公开 GitHub 仓库和你的使用目标，获得维护、工程、许可证与目标适配的结构化审查报告。</p>
+      </section>
+
+      <section class="workspace" aria-label="仓库分析工作区">
+        <form id="analysis-form" class="analysis-form">
+          <div class="field field-wide">
+            <label for="repository-url">GitHub 仓库地址</label>
+            <input id="repository-url" name="repository-url" type="url"
+              placeholder="https://github.com/owner/repository" autocomplete="url" required>
+          </div>
+          <div class="field field-wide">
+            <label for="analysis-target">你的使用目标</label>
+            <textarea id="analysis-target" name="analysis-target" rows="3" maxlength="2000"
+              placeholder="例如：判断该项目是否适合作为 Agent 开发实习的二次开发项目" required></textarea>
+            <div class="field-meta"><span>说清用途、技术栈和限制，结果会更准确</span><span id="target-count">0 / 2000</span></div>
+          </div>
+          <label class="model-toggle">
+            <input id="enable-model" type="checkbox" checked>
+            <span class="toggle-track"><span></span></span>
+            <span><strong>启用专项 Agent</strong><small>无 API Key 时自动使用规则模式</small></span>
+          </label>
+          <button id="submit-button" class="primary-button" type="submit">
+            <span>开始尽调</span><span aria-hidden="true">→</span>
+          </button>
+        </form>
+      </section>
+
+      <section id="progress-panel" class="panel hidden" aria-live="polite">
+        <div class="panel-heading">
+          <div><span class="section-number">01</span><h2>分析进度</h2></div>
+          <strong id="progress-value">0%</strong>
+        </div>
+        <div class="progress-track"><div id="progress-bar"></div></div>
+        <p id="progress-stage">任务正在排队</p>
+        <ol class="pipeline" aria-label="分析步骤">
+          <li data-stage="collecting"><span>1</span>采集</li>
+          <li data-stage="reviewing"><span>2</span>审查</li>
+          <li data-stage="verifying"><span>3</span>校验</li>
+          <li data-stage="awaiting_confirmation"><span>4</span>确认</li>
+        </ol>
+      </section>
+
+      <section id="error-panel" class="panel error-panel hidden" role="alert">
+        <div><span class="section-number">!</span><h2>分析没有完成</h2></div>
+        <p id="error-message"></p>
+        <button id="retry-button" class="secondary-button" type="button">重新提交</button>
+      </section>
+
+      <section id="report-panel" class="report hidden" aria-live="polite">
+        <div class="report-header">
+          <div>
+            <span class="eyebrow">Verified report</span>
+            <h2 id="report-repository">Repository report</h2>
+            <p id="report-summary"></p>
+          </div>
+          <div class="score-card">
+            <span>综合评分</span><strong id="overall-score">—</strong><small>/ 100</small>
+          </div>
+        </div>
+        <div class="report-toolbar">
+          <span id="recommendation-badge" class="recommendation"></span>
+          <span id="analysis-mode" class="mode-badge"></span>
+          <div class="toolbar-actions">
+            <button id="export-markdown" class="text-button" type="button">导出 Markdown</button>
+            <button id="export-json" class="text-button" type="button">导出 JSON</button>
+          </div>
+        </div>
+        <div id="section-grid" class="section-grid"></div>
+
+        <section class="risk-section">
+          <div class="panel-heading compact"><div><span class="section-number">02</span><h2>风险与证据</h2></div></div>
+          <div id="risk-list" class="risk-list"></div>
+        </section>
+
+        <section id="confirmation-panel" class="confirmation-panel">
+          <div>
+            <span class="eyebrow">Human checkpoint</span>
+            <h2>确认目标与关键风险</h2>
+            <p>报告在你确认前保持草稿状态。高风险项必须逐条接受，不允许无意识跳过。</p>
+          </div>
+          <label class="check-row"><input id="target-confirmed" type="checkbox"><span>我确认报告分析目标与我的真实用途一致</span></label>
+          <div id="risk-confirmations"></div>
+          <label class="field"><span>确认备注（可选）</span><textarea id="confirmation-notes" rows="2" maxlength="2000" placeholder="记录采用条件或后续人工检查项"></textarea></label>
+          <button id="confirm-button" class="primary-button" type="button">确认并完成报告</button>
+          <p id="confirmation-message" class="confirmation-message" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+
+    <footer><span>RepoLens Agent</span><span>事实 · 推断 · 人工确认</span></footer>
+  </body>
+</html>
