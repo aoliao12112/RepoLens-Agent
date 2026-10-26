@@ -38,6 +38,8 @@ uvicorn repolens.api:app --reload
 
 浏览器打开 `http://127.0.0.1:8000`。不配置 `OPENAI_API_KEY` 时，系统自动使用确定性规则分析；建议配置 `GITHUB_TOKEN` 以提高 GitHub API 限额。
 
+第一次使用请直接阅读 [中文使用指南](docs/USAGE.md)，其中包含 Windows 安装、环境变量、Web 操作、API 示例、评测命令和常见错误处理。
+
 ## API 闭环
 
 - `POST /api/analyses`：创建分析任务。
