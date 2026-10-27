@@ -40,6 +40,8 @@ uvicorn repolens.api:app --reload
 
 第一次使用请直接阅读 [中文使用指南](docs/USAGE.md)，其中包含 Windows 安装、环境变量、Web 操作、API 示例、评测命令和常见错误处理。
 
+用于简历撰写和面试准备时，可阅读 [项目深挖与面试表达](docs/PROJECT_DEEP_DIVE.md)，其中详细说明个人工作、技术方案、功能效果、验证结果和关键难点。
+
 ## API 闭环
 
 - `POST /api/analyses`：创建分析任务。
